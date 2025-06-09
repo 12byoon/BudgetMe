@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title> <!-- Dynamic title using Jinja -->
+
+    <!-- Google Fonts Link -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset default margin and padding for all elements */
+        body, h1, h2, p, ul {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sets the base font and background color for the body */
+        body {
+            font-family: 'Poppins', sans-serif; /* Using the Poppins font */
+            background-color: #f4f8f4; /* Light green background */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensures the body takes full viewport height */
+            font-size: 16px; /* Base font size */
+            line-height: 1.6; /* Improved readability */
+        }
+
+        /* Styles the header */
+        header {
+            background-color: #004d40; /* Dark green */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between; /* Space elements to left and right */
+            align-items: center;
+            position: relative;
+        }
+
+        /* Styles the website title */
+        .logo {
+            color: #00c853; /* Light green */
+            font-size: 24px; /* Font size for the title */
+            font-weight: 600; /* Bold weight for emphasis */
+            text-decoration: none; /* Remove underline */
+        }
+
+        /* Styles for navigation buttons */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-buttons a {
+            background-color: #00c853; /* Light green */
+            color: #004d40; /* Dark green */
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .nav-buttons a:hover {
+            background-color: #004d40; /* Dark green */
+            color: #00c853; /* Light green */
+        }
+
+        /* Styles the profile button */
+        .profile-button {
+            position: relative;
+            background-color: #00c853; /* Light green */
+            color: #004d40; /* Dark green */
+            border: 2px solid #004d40;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .profile-button:hover {
+            background-color: #004d40;
+            color: #00c853;
+        }
+
+        /* Profile dropdown menu */
+        .profile-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #004d40;
+            display: none;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .profile-dropdown a {
+            color: #00c853;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+
+        .profile-dropdown a:hover {
+            background-color: #002b24;
+        }
+
+        /* Centering login form */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1; /* Centering the content vertically */
+            text-align: center;
+            flex-direction: column;
+        }
+
+        .login-container h2 {
+            color: #004d40;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .login-container button {
+            background-color: #00c853; /* Light green */
+            color: #fff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px; /* Limiting button width */
+        }
+
+        .login-container button:hover {
+            background-color: #004d40; /* Dark green on hover */
+        }
+    </style>
+</head>
+
+<script src="https://cdn.teller.io/connect/connect.js"></script>
+
+<body>
+    <header>
+        <!-- BudgetMe logo -->
+        <a href="/" class="logo">BudgetMe</a>
+
+        <!-- Navigation buttons in the center -->
+        <div class="nav-buttons">
+            <a href="/breakdown">My Breakdown</a>
+            <a href="/advice">Financial Advice</a>
+        </div>
+
+        <!-- Profile button at the top-right corner -->
+        <div class="profile-button" onclick="toggleProfileDropdown()">U</div>
+
+        <!-- Profile dropdown menu -->
+        <div class="profile-dropdown" id="profileDropdown">
+            <a href="/account">Account</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </header>
+
+    <div class="login-container">
+        <h2>Login with your Bank</h2>
+        <p>Securely connect your bank account using Teller</p>
+        <button type="button" onclick="openTellerConnect()">Open Bank Login</button>
+    </div>
+
+    <script>
+        // Function to toggle profile dropdown visibility
+        function toggleProfileDropdown() {
+            const profileDropdown = document.getElementById('profileDropdown');
+            profileDropdown.style.display = profileDropdown.style.display === 'none' || profileDropdown.style.display === '' ? 'block' : 'none';
+        }
+
+        // Close the dropdown when clicking outside of it
+        window.onclick = function(event) {
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (!event.target.matches('.profile-button')) {
+                if (profileDropdown.style.display === 'block') {
+                    profileDropdown.style.display = 'none';
+                }
+            }
+        }
+
+        const API_ID = 'app_p4epsc4h1j499fkuv0000';
+        console.log(API_ID);
+        const connectHandler = TellerConnect.setup({
+            applicationId: API_ID, // Replace with your Teller app ID
+            environment: 'sandbox', // Use 'production' for live
+            onSuccess: function(auth) {
+                const accessToken = auth.accessToken;
+                console.log('Access Token:', accessToken);
+    
+                // Send access token to backend
+                fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ accessToken: accessToken })
+                }).then(response => response.json())
+                  .then(data => console.log(data))
+                  .catch(error => console.error('Error:', error));
+            },
+            onExit: function() {
+                console.log('User exited Teller Connect');
+                window.location.replace({});
+            },
+            onError: function(error) {
+                console.error('Error:', error);
+            }
+        });
+    
+        function openTellerConnect() {
+            connectHandler.open();
+        }
+    </script>
+</body>
+
+</html>

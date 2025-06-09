@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Advice - BudgetMe</title>  <!-- Dynamic title -->
+
+    <!-- Google Fonts Link -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset default margin and padding for all elements */
+        body, h1, h2, p, ul {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sets the base font and background color for the body */
+        body {
+            font-family: 'Poppins', sans-serif; /* Using the Poppins font */
+            background-color: #f4f8f4; /* Light green background */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensures the body takes full viewport height */
+            font-size: 16px; /* Base font size */
+            line-height: 1.6; /* Improved readability */
+        }
+
+        /* Styles the header */
+        header {
+            background-color: #004d40; /* Dark green */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between; /* Space elements to left and right */
+            align-items: center;
+            position: relative;
+        }
+
+        /* Styles the website title */
+        .logo {
+            color: #00c853; /* Light green */
+            font-size: 24px; /* Font size for the title */
+            font-weight: 600; /* Bold weight for emphasis */
+            text-decoration: none; /* Remove underline */
+        }
+
+        /* Styles for navigation buttons */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center; /* Center the navigation buttons */
+            width: 100%; /* Ensure it takes full width */
+        }
+
+        .nav-buttons a {
+            background-color: #00c853; /* Light green */
+            color: #004d40; /* Dark green */
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .nav-buttons a:hover {
+            background-color: #004d40; /* Dark green */
+            color: #00c853; /* Light green */
+        }
+
+        /* Styles the profile button */
+        .profile-button {
+            position: relative;
+            background-color: #00c853; /* Light green */
+            color: #004d40; /* Dark green */
+            border: 2px solid #004d40;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .profile-button:hover {
+            background-color: #004d40;
+            color: #00c853;
+        }
+
+        /* Main content styling */
+        main {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        /* Styles for the left summary section */
+        .summary {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 30%; /* Left section width */
+        }
+
+        .summary h3 {
+            color: #004d40; /* Dark green */
+            margin-bottom: 10px;
+        }
+
+        /* Styles for table in the summary */
+        .summary table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary th, .summary td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .summary th {
+            background-color: #f4f8f4; /* Light green background */
+            color: #004d40; /* Dark green text */
+        }
+
+        /* Styles for the chatbot section */
+        .chatbot {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 70%; /* Right section width */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chatbot h3 {
+            color: #004d40; /* Dark green */
+            margin-bottom: 10px;
+        }
+
+        .chatbot-output {
+            flex-grow: 1;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            height: 300px; /* Set a fixed height */
+            overflow-y: auto; /* Allow scrolling */
+        }
+
+        /* Styles for input section */
+        .input-section {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-section input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .input-section button {
+            background-color: #00c853; /* Light green */
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .input-section button:hover {
+            background-color: #004d40; /* Dark green on hover */
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <!-- BudgetMe logo -->
+        <a href="/" class="logo">BudgetMe</a>
+
+        <!-- Navigation buttons in the center -->
+        <div class="nav-buttons">
+            <a href="/breakdown">My Breakdown</a>
+            <a href="/advice">Financial Advice</a>
+        </div>
+
+        <!-- Profile button at the top-right corner -->
+        <div class="profile-button" onclick="toggleProfileDropdown()">U</div>
+        
+        <!-- Profile dropdown menu -->
+        <div class="profile-dropdown" id="profileDropdown">
+            <!-- Removed Account and Settings links -->
+        </div>
+    </header>
+
+    <main>
+        <!-- Summary section on the left -->
+        <div class="summary">
+            <h3>Financial Summary</h3>
+            <table>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+                <tr>
+                    <td>Balance</td>
+                    <td>$5,000</td>
+                </tr>
+                <tr>
+                    <td>Recent Transaction</td>
+                    <td>-$200 (Groceries)</td>
+                </tr>
+                <tr>
+                    <td>Investment</td>
+                    <td>$1,200</td>
+                </tr>
+                <tr>
+                    <td>Savings Goal</td>
+                    <td>$10,000</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Chatbot section on the right -->
+        <div class="chatbot">
+            <h3>Financial Advice Chatbot</h3>
+            <div class="chatbot-output" id="chatbotOutput">
+                <!-- This is where the AI chatbot's responses will appear -->
+                <p>Welcome! How can I assist with your financial goals today?</p>
+            </div>
+
+            <div class="input-section">
+                <input type="text" id="userInput" placeholder="Type your question here...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Function to handle sending a message
+        function sendMessage() {
+            const userInput = document.getElementById('userInput').value;
+            const chatbotOutput = document.getElementById('chatbotOutput');
+
+            // Display the user's message
+            if (userInput.trim() !== "") {
+                const userMessage = document.createElement('p');
+                userMessage.textContent = "You: " + userInput;
+                userMessage.style.color = "#004d40"; // Dark green for user's text
+                chatbotOutput.appendChild(userMessage);
+
+                // Simulate AI response
+                const botMessage = document.createElement('p');
+                botMessage.textContent = "AI: This is a sample response. Please implement the actual functionality.";
+                botMessage.style.color = "#333";
+                chatbotOutput.appendChild(botMessage);
+
+                // Scroll to the bottom of the chatbot output
+                chatbotOutput.scrollTop = chatbotOutput.scrollHeight;
+
+                // Clear the input
+                document.getElementById('userInput').value = "";
+            }
+        }
+
+        // Function to toggle profile dropdown visibility
+        function toggleProfileDropdown() {
+            const profileDropdown = document.getElementById('profileDropdown');
+            profileDropdown.style.display = profileDropdown.style.display === 'none' || profileDropdown.style.display === '' ? 'block' : 'none';
+        }
+
+        // Close the dropdown when clicking outside of it
+        window.onclick = function(event) {
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (!event.target.matches('.profile-button')) {
+                if (profileDropdown.style.display === 'block') {
+                    profileDropdown.style.display = 'none';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
