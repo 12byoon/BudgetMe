@@ -1,107 +1,99 @@
-from flask import Flask, render_template, jsonify, redirect, request, url_for
+"""BudgetMe - Flask app that pulls bank data from the Teller API.
+
+Most pages are still static mockups; see README.md for feature status. The only
+live data path today is: Teller Connect (browser) -> POST /login -> session token
+-> GET /breakdown fetches the account balance.
+"""
+import os
+
 import requests
-from time import sleep
-import json
-import budgetMe.data
-# from json impo
+from dotenv import load_dotenv
+from flask import (
+    Flask,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
-def call(route, auth):
-    r = requests.get(route, auth=(auth, '')).json()
-    if isinstance(r, list):
-        return r[0]
-    return r
+load_dotenv()
 
-app = Flask(__name__, template_folder='templateFiles',static_folder='static')
-access_token = None
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+TELLER_API = "https://api.teller.io"
+TELLER_APP_ID = os.environ.get("TELLER_APP_ID", "app_p4epsc4h1j499fkuv0000")
+TELLER_ENV = os.environ.get("TELLER_ENV", "sandbox")
+
+
+def teller_get(url, access_token):
+    """GET a Teller API URL using the enrollment access token.
+
+    Teller uses HTTP basic auth with the access token as the username and an
+    empty password. Returns parsed JSON (a dict or a list, depending on the
+    endpoint).
+    """
+    resp = requests.get(url, auth=(access_token, ""), timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+
 @app.route("/")
 def home():
-    return render_template('index.html')
+    return render_template("index.html", title="BudgetMe")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        payload = request.get_json(silent=True) or {}
+        access_token = payload.get("accessToken")
+        if not access_token:
+            return {"error": "accessToken missing"}, 400
+        session["access_token"] = access_token
+        return {"ok": True, "redirect": url_for("breakdown")}
+    return render_template(
+        "login.html",
+        title="Login - BudgetMe",
+        teller_app_id=TELLER_APP_ID,
+        teller_env=TELLER_ENV,
+    )
+
+
+@app.route("/logout")
+def logout():
+    session.pop("access_token", None)
+    return redirect(url_for("home"))
+
 
 @app.route("/breakdown")
 def breakdown():
-    print(access_token)
+    access_token = session.get("access_token")
     if not access_token:
-        print("no access token")
-        return redirect('/login')
-    
+        return redirect(url_for("login"))
 
-    print(access_token)
+    accounts = teller_get(f"{TELLER_API}/accounts", access_token)
+    account = accounts[0] if isinstance(accounts, list) and accounts else {}
+    links = account.get("links", {})
 
-    # requests.post('https://api.teller.io/accounts', headers=)
-    # response = requests.get('https://api.teller.io/accounts', auth=(access_token, ''))
-    data = call('https://api.teller.io/accounts', auth=access_token)
-    # dict(response)
+    balances = {}
+    transactions = []
+    if links.get("balances"):
+        balances = teller_get(links["balances"], access_token)
+    if links.get("transactions"):
+        transactions = teller_get(links["transactions"], access_token)
 
+    return render_template(
+        "breakdown.html",
+        title="My Breakdown - BudgetMe",
+        institution=(account.get("institution") or {}).get("name"),
+        currency=account.get("currency"),
+        balance=balances.get("available"),
+        transactions=transactions,
+    )
 
-    # print(response)
-    # response = response.json()
-    # data = response[0]
-    print(data.keys())
-    # print(type(data))
-    currency = data['currency']
-    # enrollment_id = 
-    # name = data['name']
-    institution = data['institution']['name']
-    # accounts = data['institution']['name']
-
-    links = data['links']
-
-    balances = links['balances']
-    
-
-    
-
-    transactions = links['transactions']
-
-
-    # print(transactions)
-    transactions = call(transactions, auth=access_token)
-    balances = call(balances, auth=access_token)
-
-    print(balances)
-    currentAccBal = balances['available']
-    print(currentAccBal)
-
-    print(transactions, transactions.keys())
-    accounts = []
-    
-
-    return render_template('breakdown.html', balance=currentAccBal, accounts=accounts, transactions=transactions)
 
 @app.route("/advice")
 def advice():
-    return render_template('advice.html')
-
-@app.route("/login", methods=['POST', 'GET'])
-def login():
-    global access_token
-    # if access_token:
-    
-    if request.method == 'POST':
-        print('no token')
-        data = request.json
-        access_token = data.get('accessToken')
-
-        # if not access_token:
-        #     return jsonify({'error': 'Access token missing'}), 400
-        
-
-        # Save token (for demonstration)
-        print(f"Access Token: {access_token}")
-        return redirect('/breakdown')
-        
-    return render_template('login.html')
-
-# @app.route("/teller")
-# def teller():
-#     return render_template('teller.html')
-
-@app.route('/save-token', methods=['POST'])
-def save_token():
-    
-
-    # sleep(1.5)
-    return redirect('/breakdown')
-# @app.route("/advice")
-# def breakdown():
-#     return render_template('advice.html')
+    return render_template("advice.html", title="Financial Advice - BudgetMe")
