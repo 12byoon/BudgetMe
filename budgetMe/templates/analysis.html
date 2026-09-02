@@ -1,27 +1,88 @@
 {% extends "base.html" %}
 
-{% block title %}Analysis - BudgetMe{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
-{# NOTE: placeholder page, no route serves it yet. #}
+{# NOTE: placeholder page - the /analysis route renders it but there is no analysis logic yet. #}
 
 {% block head %}
 <style>
     main {
-        padding: 40px;
-        max-width: 900px;
+        flex-grow: 1;
+        width: 100%;
+        max-width: 1000px;
         margin: 20px auto;
+        padding: 0 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .card {
         background-color: #fff;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         border-radius: 8px;
-        flex-grow: 1;
-        text-align: center;
+        padding: 30px;
+    }
+
+    .card h2,
+    .card h3 {
+        color: #004d40;
+        margin-bottom: 10px;
+    }
+
+    .card-subtitle {
+        color: #777;
+        font-size: 14px;
+    }
+
+    .graph-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .graph-grid .card {
+        flex: 1 1 calc(50% - 20px);
+        min-width: 300px;
+    }
+
+    .graph-placeholder {
+        background-color: #f4f8f4;
+        border: 2px dashed #ccc;
+        height: 220px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #aaa;
+        margin-top: 12px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <main>
-    <h2>Analysis</h2>
-    <p>This is the analysis page.</p>
+    <div class="card">
+        <h2>Analysis</h2>
+        <p class="card-subtitle">Spending trends and insights. This page is a placeholder - no analysis is computed yet.</p>
+    </div>
+
+    <div class="graph-grid">
+        <div class="card">
+            <h3>Spending by category</h3>
+            <div class="graph-placeholder">Pie chart</div>
+        </div>
+        <div class="card">
+            <h3>Monthly cash flow</h3>
+            <div class="graph-placeholder">Bar chart</div>
+        </div>
+        <div class="card">
+            <h3>Balance over time</h3>
+            <div class="graph-placeholder">Line chart</div>
+        </div>
+        <div class="card">
+            <h3>Top merchants</h3>
+            <div class="graph-placeholder">Table</div>
+        </div>
+    </div>
 </main>
 {% endblock %}

@@ -53,19 +53,34 @@ budgetMe/
 teller.py               standalone Teller API probe (mTLS, not part of the app)
 ```
 
+## Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Marketing home |
+| `/login` (GET/POST) | Teller Connect page; POST stores the access token in the session |
+| `/logout` | Clears the session token |
+| `/breakdown` | Live account balance from Teller (rest of the page is mock) |
+| `/advice` | Mock "advice chatbot" page |
+| `/analysis` | Placeholder analytics page (no logic) |
+| `/account` | Placeholder profile page (inert) |
+| `/settings` | Placeholder settings page (inert) |
+| `/createAccount` (GET/POST) | Placeholder signup form (no auth backend) |
+
 ## Feature status
 
 | Area | State |
 |------|-------|
-| Marketing pages (`/`, `/login`, `/advice`) | Done - static |
+| Marketing pages (`/`, `/login`) | Done - static |
 | Teller Connect bank link (sandbox) | Working - token stored in the Flask session |
 | `/breakdown` account balance | Working - live from Teller |
 | `/breakdown` transactions | Data is fetched and passed to the template as `transactions`, but the table still shows hardcoded rows |
 | `/breakdown` savings / investments / goals | Placeholder numbers |
 | `/breakdown` charts | Empty placeholder boxes, no charting library |
 | `/advice` AI chatbot | UI only, returns a canned string, no backend |
-| `/analysis` page | Placeholder template, no route |
-| Account creation / login / `/account` / `/settings` | Templates only, no routes, no database, no auth |
+| `/analysis` | Route + styled placeholder page; no analysis computed |
+| `/account`, `/settings` | Route + styled placeholder pages; all controls inert |
+| Account creation (`/createAccount`) | Route + styled form; no database, no auth, submit does nothing |
 
 ## Notes
 
