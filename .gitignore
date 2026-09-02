@@ -1,3 +1,18 @@
 .venv
 /venv
 .env
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Local tooling / editor config
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
