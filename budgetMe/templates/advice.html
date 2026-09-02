@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+    main {
+        display: flex;
+        padding: 20px;
+        gap: 20px;
+        max-width: 1200px;
+        margin: 20px auto;
+    }
+
+    .summary {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 30%;
+    }
+
+    .summary h3 {
+        color: #004d40;
+        margin-bottom: 10px;
+    }
+
+    .summary table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .summary th, .summary td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .summary th {
+        background-color: #f4f8f4;
+        color: #004d40;
+    }
+
+    .chatbot {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 70%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chatbot h3 {
+        color: #004d40;
+        margin-bottom: 10px;
+    }
+
+    .chatbot-output {
+        flex-grow: 1;
+        background-color: #f9f9f9;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        height: 300px;
+        overflow-y: auto;
+    }
+
+    .input-section {
+        display: flex;
+        gap: 10px;
+    }
+
+    .input-section input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .input-section button {
+        background-color: #00c853;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .input-section button:hover {
+        background-color: #004d40;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+    {# NOTE: the summary figures and the chatbot are placeholders - no backend. #}
+
+    <!-- Summary section on the left -->
+    <div class="summary">
+        <h3>Financial Summary</h3>
+        <table>
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+            <tr>
+                <td>Balance</td>
+                <td>$5,000</td>
+            </tr>
+            <tr>
+                <td>Recent Transaction</td>
+                <td>-$200 (Groceries)</td>
+            </tr>
+            <tr>
+                <td>Investment</td>
+                <td>$1,200</td>
+            </tr>
+            <tr>
+                <td>Savings Goal</td>
+                <td>$10,000</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Chatbot section on the right -->
+    <div class="chatbot">
+        <h3>Financial Advice Chatbot</h3>
+        <div class="chatbot-output" id="chatbotOutput">
+            <p>Welcome! How can I assist with your financial goals today?</p>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="userInput" placeholder="Type your question here...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Placeholder chatbot - echoes the question and returns a canned reply.
+    function sendMessage() {
+        const input = document.getElementById('userInput');
+        const output = document.getElementById('chatbotOutput');
+        const text = input.value.trim();
+        if (text === "") return;
+
+        const userMessage = document.createElement('p');
+        userMessage.textContent = "You: " + text;
+        userMessage.style.color = "#004d40";
+        output.appendChild(userMessage);
+
+        const botMessage = document.createElement('p');
+        botMessage.textContent = "AI: This is a sample response. Please implement the actual functionality.";
+        botMessage.style.color = "#333";
+        output.appendChild(botMessage);
+
+        output.scrollTop = output.scrollHeight;
+        input.value = "";
+    }
+</script>
+{% endblock %}
