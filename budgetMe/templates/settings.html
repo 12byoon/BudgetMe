@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+    main {
+        flex-grow: 1;
+        width: 100%;
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 0 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .card {
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 40px;
+    }
+
+    .card h2 {
+        color: #004d40;
+        margin-bottom: 6px;
+    }
+
+    .card h3 {
+        color: #004d40;
+        margin-bottom: 16px;
+    }
+
+    .card-subtitle {
+        color: #777;
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        padding: 14px 0;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .setting-row:last-child {
+        border-bottom: none;
+    }
+
+    .setting-row .label {
+        color: #333;
+        font-weight: 500;
+    }
+
+    .setting-row .desc {
+        color: #777;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    select {
+        padding: 8px 10px;
+        border: 1px solid #004d40;
+        border-radius: 4px;
+        font-size: 15px;
+        font-family: inherit;
+        background-color: #fff;
+        color: #333;
+    }
+
+    /* Non-functional toggle */
+    .toggle {
+        position: relative;
+        width: 46px;
+        height: 26px;
+        background-color: #ccc;
+        border-radius: 13px;
+        flex-shrink: 0;
+        cursor: not-allowed;
+    }
+
+    .toggle.on {
+        background-color: #00c853;
+    }
+
+    .toggle::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background-color: #fff;
+        border-radius: 50%;
+        transition: left 0.2s;
+    }
+
+    .toggle.on::after {
+        left: 23px;
+    }
+
+    .danger {
+        border: 1px solid #e0b4b4;
+    }
+
+    .danger h3 {
+        color: #c62828;
+    }
+
+    .danger-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    button {
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    button.secondary {
+        background-color: #fff;
+        color: #c62828;
+        border: 1px solid #c62828;
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .note {
+        margin-top: 16px;
+        font-size: 14px;
+        color: #777;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+    <div class="card">
+        <h2>Settings</h2>
+        <p class="card-subtitle">These controls are placeholders and don't save yet.</p>
+
+        <h3>Notifications</h3>
+        <div class="setting-row">
+            <span class="label">Weekly spending summary<br><span class="desc">Email recap every Monday</span></span>
+            <span class="toggle on" role="switch" aria-checked="true"></span>
+        </div>
+        <div class="setting-row">
+            <span class="label">Low balance alerts<br><span class="desc">Notify when an account drops below a threshold</span></span>
+            <span class="toggle" role="switch" aria-checked="false"></span>
+        </div>
+        <div class="setting-row">
+            <span class="label">Large transaction alerts<br><span class="desc">Notify on transactions over $500</span></span>
+            <span class="toggle on" role="switch" aria-checked="true"></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Preferences</h3>
+        <div class="setting-row">
+            <span class="label">Default currency</span>
+            <select disabled>
+                <option>USD - US Dollar</option>
+                <option>EUR - Euro</option>
+                <option>GBP - British Pound</option>
+            </select>
+        </div>
+        <div class="setting-row">
+            <span class="label">Theme</span>
+            <select disabled>
+                <option>Light</option>
+                <option>Dark</option>
+                <option>System</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card danger">
+        <h3>Danger zone</h3>
+        <div class="danger-actions">
+            <button type="button" class="secondary" disabled>Disconnect bank</button>
+            <button type="button" class="secondary" disabled>Delete account</button>
+        </div>
+        <p class="note">These actions aren't wired up yet.</p>
+    </div>
+</main>
+{% endblock %}

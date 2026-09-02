@@ -97,3 +97,29 @@ def breakdown():
 @app.route("/advice")
 def advice():
     return render_template("advice.html", title="Financial Advice - BudgetMe")
+
+
+# --- Placeholder pages -------------------------------------------------------
+# These render styled pages so the nav/dropdown links resolve. None of them
+# have a backend yet; forms and controls are inert scaffolding.
+
+
+@app.route("/account")
+def account():
+    return render_template("account.html", title="Account - BudgetMe")
+
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", title="Settings - BudgetMe")
+
+
+@app.route("/analysis")
+def analysis():
+    return render_template("analysis.html", title="Analysis - BudgetMe")
+
+
+@app.route("/createAccount", methods=["GET", "POST"])
+def create_account():
+    # No auth backend yet - a POST just re-renders the page.
+    return render_template("createAccount.html", title="Create Account - BudgetMe")

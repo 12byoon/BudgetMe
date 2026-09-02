@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Create Account - BudgetMe{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
-{# NOTE: no route serves this template yet and there is no auth backend. #}
+{# NOTE: the /createAccount route renders this, but there is no auth backend - the form submits nowhere useful. #}
 
 {% block head %}
 <style>

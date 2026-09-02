@@ -36,6 +36,16 @@
     .login-container button:hover {
         background-color: #004d40;
     }
+
+    .login-container .signup {
+        margin-top: 24px;
+        font-size: 15px;
+    }
+
+    .login-container .signup a {
+        color: #004d40;
+        font-weight: 600;
+    }
 </style>
 {% endblock %}
 
@@ -44,6 +54,7 @@
     <h2>Login with your Bank</h2>
     <p>Securely connect your bank account using Teller</p>
     <button type="button" onclick="openTellerConnect()">Open Bank Login</button>
+    <p class="signup">New here? <a href="/createAccount">Create an account</a></p>
 </div>
 {% endblock %}
 
