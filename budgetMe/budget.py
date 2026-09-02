@@ -1,12 +1,12 @@
 """BudgetMe - Flask app that pulls bank data from the Teller API.
 
-Most pages are still static mockups; see README.md for feature status. The only
-live data path today is: Teller Connect (browser) -> POST /login -> session token
--> GET /breakdown fetches the account balance.
+Live data path: Teller Connect (browser) -> POST /login -> session token ->
+GET /breakdown renders every account, its balances and recent transactions
+(see budgetMe/teller_api.py). Other pages are still static mockups; see
+README.md for feature status.
 """
 import os
 
-import requests
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -17,26 +17,20 @@ from flask import (
     url_for,
 )
 
+from budgetMe.teller_api import TellerError, format_money, get_overview
+
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-TELLER_API = "https://api.teller.io"
 TELLER_APP_ID = os.environ.get("TELLER_APP_ID", "app_p4epsc4h1j499fkuv0000")
 TELLER_ENV = os.environ.get("TELLER_ENV", "sandbox")
 
 
-def teller_get(url, access_token):
-    """GET a Teller API URL using the enrollment access token.
-
-    Teller uses HTTP basic auth with the access token as the username and an
-    empty password. Returns parsed JSON (a dict or a list, depending on the
-    endpoint).
-    """
-    resp = requests.get(url, auth=(access_token, ""), timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+@app.template_filter("money")
+def _money(value):
+    return format_money(value)
 
 
 @app.route("/")
@@ -73,24 +67,32 @@ def breakdown():
     if not access_token:
         return redirect(url_for("login"))
 
-    accounts = teller_get(f"{TELLER_API}/accounts", access_token)
-    account = accounts[0] if isinstance(accounts, list) and accounts else {}
-    links = account.get("links", {})
-
-    balances = {}
-    transactions = []
-    if links.get("balances"):
-        balances = teller_get(links["balances"], access_token)
-    if links.get("transactions"):
-        transactions = teller_get(links["transactions"], access_token)
+    try:
+        accounts = get_overview(access_token)
+    except TellerError as exc:
+        app.logger.warning("Teller error on /breakdown: status=%s code=%s", exc.status, exc.code)
+        if exc.status in (401, 403, 404):
+            # Token is no longer usable - drop it so "Connect a bank" starts fresh.
+            session.pop("access_token", None)
+            detail = f" (Teller: {exc.code})" if exc.code else ""
+            error = (
+                "Your bank connection isn't working anymore - connect again to "
+                f"refresh it.{detail}"
+            )
+        else:
+            error = exc.message or "Couldn't reach Teller. Please try again."
+        return render_template(
+            "breakdown.html",
+            title="My Breakdown - BudgetMe",
+            accounts=[],
+            error=error,
+        )
 
     return render_template(
         "breakdown.html",
         title="My Breakdown - BudgetMe",
-        institution=(account.get("institution") or {}).get("name"),
-        currency=account.get("currency"),
-        balance=balances.get("available"),
-        transactions=transactions,
+        accounts=accounts,
+        error=None,
     )
 
 

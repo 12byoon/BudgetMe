@@ -100,6 +100,21 @@ header {
     background-color: #002b24;
 }
 
+/* Flashed messages */
+.flash-list {
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+}
+
+.flash {
+    background-color: #e8f5e9;
+    color: #004d40;
+    border-left: 4px solid #00c853;
+    padding: 12px 16px;
+    border-radius: 4px;
+}
+
 /* Footer */
 footer {
     background-color: #002b24;

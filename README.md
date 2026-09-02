@@ -37,20 +37,25 @@ change).
 ### Trying the bank-link flow
 
 1. Go to `/login`, click **Open Bank Login**.
-2. In the Teller Connect popup pick any sandbox institution and use the test
-   credentials Teller shows.
-3. On success you land on `/breakdown`, which displays your (sandbox) account
-   balance. Everything else on that page is placeholder data.
+2. In Teller Connect pick any institution and log in with the sandbox
+   credentials: username `username`, password `password`.
+3. On success you land on `/breakdown`, which lists every account from the
+   (fake) sandbox enrollment with its balances and recent transactions.
+
+Sandbox data is synthetic but served by the real `api.teller.io`, so the
+machine running the app needs outbound HTTPS to `api.teller.io`.
 
 ## Project layout
 
 ```
 run.py                  entry point
 budgetMe/
-  budget.py             Flask app + routes + Teller API calls
+  budget.py             Flask app + routes
+  teller_api.py         Teller API client (get_overview, TellerError, money helpers)
   templates/            Jinja templates (base.html + one per page)
   static/               style.css, app.js
 teller.py               standalone Teller API probe (mTLS, not part of the app)
+tests/test_breakdown.py fixture + error-path checks (python tests/test_breakdown.py)
 ```
 
 ## Routes
@@ -60,7 +65,7 @@ teller.py               standalone Teller API probe (mTLS, not part of the app)
 | `/` | Marketing home |
 | `/login` (GET/POST) | Teller Connect page; POST stores the access token in the session |
 | `/logout` | Clears the session token |
-| `/breakdown` | Live account balance from Teller (rest of the page is mock) |
+| `/breakdown` | Live: every connected account with its balances + recent transactions (from Teller) |
 | `/advice` | Mock "advice chatbot" page |
 | `/analysis` | Placeholder analytics page (no logic) |
 | `/account` | Placeholder profile page (inert) |
@@ -73,10 +78,10 @@ teller.py               standalone Teller API probe (mTLS, not part of the app)
 |------|-------|
 | Marketing pages (`/`, `/login`) | Done - static |
 | Teller Connect bank link (sandbox) | Working - token stored in the Flask session |
-| `/breakdown` account balance | Working - live from Teller |
-| `/breakdown` transactions | Data is fetched and passed to the template as `transactions`, but the table still shows hardcoded rows |
-| `/breakdown` savings / investments / goals | Placeholder numbers |
-| `/breakdown` charts | Empty placeholder boxes, no charting library |
+| `/breakdown` accounts + balances | Working - live from Teller, all accounts in the enrollment |
+| `/breakdown` transactions | Working - live per account, newest first, capped at 25 shown |
+| `/breakdown` error handling | Expired/revoked token -> flash + redirect to `/login`; Teller/network error -> styled error card |
+| `/breakdown` charts / spending insights | Not started (a "coming soon" note in place of the old fake sections) |
 | `/advice` AI chatbot | UI only, returns a canned string, no backend |
 | `/analysis` | Route + styled placeholder page; no analysis computed |
 | `/account`, `/settings` | Route + styled placeholder pages; all controls inert |

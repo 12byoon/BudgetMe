@@ -28,6 +28,14 @@
         </div>
     </header>
 
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flash-list">
+        {% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
 
     <footer>
