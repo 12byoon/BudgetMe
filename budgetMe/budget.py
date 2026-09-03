@@ -1,12 +1,13 @@
-"""BudgetMe - Flask app that pulls bank data from the Teller API.
+"""BudgetMe - Flask app that pulls bank data from Plaid.
 
-Most pages are still static mockups; see README.md for feature status. The only
-live data path today is: Teller Connect (browser) -> POST /login -> session token
--> GET /breakdown fetches the account balance.
+Live data path: Plaid Link (browser) -> POST /login exchanges the public token
+for an access token stored in the session -> GET /breakdown renders every linked
+account with its balances and recent transactions (see budgetMe/plaid_api.py).
+Other feature pages are still static mockups; see README.md.
 """
 import os
+from uuid import uuid4
 
-import requests
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -17,26 +18,25 @@ from flask import (
     url_for,
 )
 
+from budgetMe.plaid_api import (
+    PlaidError,
+    create_link_token,
+    exchange_public_token,
+    format_money,
+    get_overview,
+)
+
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-TELLER_API = "https://api.teller.io"
-TELLER_APP_ID = os.environ.get("TELLER_APP_ID", "app_p4epsc4h1j499fkuv0000")
-TELLER_ENV = os.environ.get("TELLER_ENV", "sandbox")
+_RELINK_CODES = ("ITEM_LOGIN_REQUIRED", "INVALID_ACCESS_TOKEN")
 
 
-def teller_get(url, access_token):
-    """GET a Teller API URL using the enrollment access token.
-
-    Teller uses HTTP basic auth with the access token as the username and an
-    empty password. Returns parsed JSON (a dict or a list, depending on the
-    endpoint).
-    """
-    resp = requests.get(url, auth=(access_token, ""), timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+@app.template_filter("money")
+def _money(value):
+    return format_money(value)
 
 
 @app.route("/")
@@ -48,22 +48,38 @@ def home():
 def login():
     if request.method == "POST":
         payload = request.get_json(silent=True) or {}
-        access_token = payload.get("accessToken")
-        if not access_token:
-            return {"error": "accessToken missing"}, 400
+        public_token = payload.get("public_token")
+        if not public_token:
+            return {"error": "public_token missing"}, 400
+        try:
+            access_token = exchange_public_token(public_token)
+        except PlaidError as exc:
+            return {"error": exc.message}, 400
         session["access_token"] = access_token
+        session["institution_name"] = payload.get("institution_name")
         return {"ok": True, "redirect": url_for("breakdown")}
+
+    user_id = session.setdefault("plaid_user_id", uuid4().hex)
+    link_token = link_error = None
+    try:
+        link_token = create_link_token(user_id)
+    except PlaidError:
+        link_error = (
+            "Couldn't start the bank link. Make sure PLAID_CLIENT_ID and "
+            "PLAID_SECRET are set in .env, then reload."
+        )
     return render_template(
         "login.html",
         title="Login - BudgetMe",
-        teller_app_id=TELLER_APP_ID,
-        teller_env=TELLER_ENV,
+        link_token=link_token,
+        link_error=link_error,
     )
 
 
 @app.route("/logout")
 def logout():
     session.pop("access_token", None)
+    session.pop("institution_name", None)
     return redirect(url_for("home"))
 
 
@@ -73,24 +89,24 @@ def breakdown():
     if not access_token:
         return redirect(url_for("login"))
 
-    accounts = teller_get(f"{TELLER_API}/accounts", access_token)
-    account = accounts[0] if isinstance(accounts, list) and accounts else {}
-    links = account.get("links", {})
-
-    balances = {}
-    transactions = []
-    if links.get("balances"):
-        balances = teller_get(links["balances"], access_token)
-    if links.get("transactions"):
-        transactions = teller_get(links["transactions"], access_token)
+    try:
+        accounts = get_overview(access_token, session.get("institution_name"))
+    except PlaidError as exc:
+        app.logger.warning("Plaid error on /breakdown: status=%s code=%s", exc.status, exc.code)
+        if exc.code in _RELINK_CODES:
+            session.pop("access_token", None)
+            session.pop("institution_name", None)
+            error = f"Your bank connection needs to be re-linked - connect again. (Plaid: {exc.code})"
+        elif exc.code == "INVALID_API_KEYS":
+            error = "Plaid rejected the API keys - check PLAID_CLIENT_ID / PLAID_SECRET in .env."
+        else:
+            error = exc.message or "Couldn't load your accounts. Please try again."
+        return render_template(
+            "breakdown.html", title="My Breakdown - BudgetMe", accounts=[], error=error
+        )
 
     return render_template(
-        "breakdown.html",
-        title="My Breakdown - BudgetMe",
-        institution=(account.get("institution") or {}).get("name"),
-        currency=account.get("currency"),
-        balance=balances.get("available"),
-        transactions=transactions,
+        "breakdown.html", title="My Breakdown - BudgetMe", accounts=accounts, error=None
     )
 
 
