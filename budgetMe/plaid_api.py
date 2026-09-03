@@ -6,8 +6,13 @@ authenticates with `client_id` + `secret` in the JSON body of every request
 
 Token dance:
   create_link_token(user_id)     -> link_token   (handed to Plaid Link in the browser)
-  exchange_public_token(pub_tok) -> access_token (long-lived; store in the session)
-  get_overview(access_token)     -> per-account balances + recent transactions
+  exchange_public_token(pub_tok) -> (access_token, item_id)   (long-lived; store it)
+  fetch_accounts(access_token)   -> raw account list
+  sync_transactions(token, cur)  -> (added, modified, removed, next_cursor, is_ready)
+
+`shape_account` / `shape_transaction` normalise Plaid's raw JSON for the store
+and templates, including flipping the transaction amount sign (Plaid: + = money
+out; app: - = spent).
 """
 import logging
 import os
@@ -22,6 +27,7 @@ _HOSTS = {
     "sandbox": "https://sandbox.plaid.com",
     "production": "https://production.plaid.com",
 }
+_READY_STATUSES = ("HISTORICAL_UPDATE_COMPLETE", "INITIAL_UPDATE_COMPLETE")
 
 
 def _base_url():
@@ -95,10 +101,51 @@ def create_link_token(user_id, client_name="BudgetMe"):
 
 
 def exchange_public_token(public_token):
-    return _post("/item/public_token/exchange", public_token=public_token)["access_token"]
+    data = _post("/item/public_token/exchange", public_token=public_token)
+    return data["access_token"], data.get("item_id")
 
 
-# --- reading data -------------------------------------------------------
+# --- fetching -----------------------------------------------------------
+
+def fetch_accounts(access_token):
+    return _post("/accounts/get", access_token=access_token).get("accounts") or []
+
+
+def sync_transactions(access_token, cursor=""):
+    """Pull a /transactions/sync delta.
+
+    Returns (added, modified, removed_ids, next_cursor, is_ready). On the initial
+    pull (cursor == "") the sandbox may report NOT_READY for a few seconds; this
+    polls a handful of times before giving up with is_ready=False.
+    """
+    added, modified, removed = [], [], []
+    is_ready = True
+    for attempt in range(5):
+        data = _post(
+            "/transactions/sync", access_token=access_token, cursor=cursor, count=500
+        )
+        added.extend(data.get("added") or [])
+        modified.extend(data.get("modified") or [])
+        removed.extend(t.get("transaction_id") for t in (data.get("removed") or []))
+        cursor = data.get("next_cursor") or cursor
+
+        if data.get("has_more"):
+            continue
+
+        status = data.get("transactions_update_status")
+        if added or modified or removed or status in _READY_STATUSES:
+            break
+        # nothing yet and not marked ready
+        if not cursor and attempt < 4:
+            time.sleep(1.5)
+            continue
+        is_ready = status in _READY_STATUSES
+        break
+
+    return added, modified, removed, cursor, is_ready
+
+
+# --- shaping ----------------------------------------------------------
 
 def _dec(value):
     if value is None or value == "":
@@ -107,6 +154,11 @@ def _dec(value):
         return Decimal(str(value))
     except (InvalidOperation, ValueError):
         return None
+
+
+def _to_float(value):
+    d = _dec(value)
+    return float(d) if d is not None else None
 
 
 def format_money(value):
@@ -124,97 +176,34 @@ def _pfc_label(txn):
     return primary.replace("_", " ").capitalize() if primary else None
 
 
-def _transaction_view(txn):
-    # Plaid `amount` is POSITIVE when money LEAVES the account (a purchase) and
-    # negative when it comes in. Flip it so the rest of the app treats
-    # negative = spent, positive = received.
-    amount = _dec(txn.get("amount"))
-    if amount is not None:
-        amount = -amount
+def shape_account(raw):
+    b = raw.get("balances") or {}
     return {
-        "date": txn.get("date"),
-        "name": txn.get("name"),
-        "merchant_name": txn.get("merchant_name"),
-        "category": _pfc_label(txn),
-        "pending": bool(txn.get("pending")),
-        "amount": amount,
+        "account_id": raw.get("account_id"),
+        "name": raw.get("name"),
+        "official_name": raw.get("official_name"),
+        "mask": raw.get("mask"),
+        "type": raw.get("type"),
+        "subtype": raw.get("subtype"),
+        "available": _to_float(b.get("available")),
+        "current": _to_float(b.get("current")),
+        "currency": b.get("iso_currency_code"),
     }
 
 
-def _sync_transactions(access_token):
-    """Pull all transactions via /transactions/sync, polling a few times while
-    the sandbox finishes its initial load."""
-    added, cursor = [], ""
-    for attempt in range(5):
-        data = _post(
-            "/transactions/sync", access_token=access_token, cursor=cursor, count=500
-        )
-        added.extend(data.get("added") or [])
-        cursor = data.get("next_cursor") or cursor
-        if data.get("has_more"):
-            continue
-        done = data.get("transactions_update_status") in (
-            "HISTORICAL_UPDATE_COMPLETE",
-            "INITIAL_UPDATE_COMPLETE",
-        )
-        if added or done:
-            break
-        if attempt < 4:
-            time.sleep(1.5)
-    return added
-
-
-def get_overview(access_token, institution_name=None):
-    """Return a list of per-account overviews.
-
-    Each entry: {
-        "account": {name, official_name, mask, type, subtype},
-        "institution_name": str | None,
-        "available": Decimal | None,
-        "current": Decimal | None,
-        "currency": str | None,
-        "transactions": [<transaction view>, ...],   # newest first
+def shape_transaction(raw):
+    # Plaid `amount` is positive when money LEAVES the account. Flip it so the
+    # rest of the app treats negative = spent, positive = received.
+    amt = _to_float(raw.get("amount"))
+    if amt is not None:
+        amt = -amt
+    return {
+        "transaction_id": raw.get("transaction_id"),
+        "account_id": raw.get("account_id"),
+        "date": raw.get("date"),
+        "name": raw.get("name"),
+        "merchant_name": raw.get("merchant_name"),
+        "amount": amt,
+        "pending": 1 if raw.get("pending") else 0,
+        "category": _pfc_label(raw),
     }
-    """
-    accounts = _post("/accounts/get", access_token=access_token).get("accounts") or []
-    raw_txns = _sync_transactions(access_token)
-
-    by_account = {}
-    for t in raw_txns:
-        by_account.setdefault(t.get("account_id"), []).append(t)
-
-    overview = []
-    for acc in accounts:
-        balances = acc.get("balances") or {}
-        txns = by_account.get(acc.get("account_id"), [])
-        txns.sort(key=lambda t: t.get("date") or "", reverse=True)
-        overview.append(
-            {
-                "account": {
-                    "name": acc.get("name"),
-                    "official_name": acc.get("official_name"),
-                    "mask": acc.get("mask"),
-                    "type": acc.get("type"),
-                    "subtype": acc.get("subtype"),
-                },
-                "institution_name": institution_name,
-                "available": _dec(balances.get("available")),
-                "current": _dec(balances.get("current")),
-                "currency": balances.get("iso_currency_code"),
-                "transactions": [_transaction_view(t) for t in txns],
-            }
-        )
-
-    # Order the cards for a budgeting view: spending accounts (checking/savings,
-    # then credit) first, most-active first, then everything else. Keeps the
-    # useful cards on top when an institution returns many accounts.
-    type_rank = {"depository": 2, "credit": 1}
-    overview.sort(
-        key=lambda o: (
-            type_rank.get(o["account"]["type"], 0),
-            len(o["transactions"]),
-            abs(o["current"] or 0),
-        ),
-        reverse=True,
-    )
-    return overview

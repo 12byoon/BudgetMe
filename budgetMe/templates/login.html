@@ -4,56 +4,33 @@
 
 {% block head %}
 <style>
-    .login-container {
+    .connect-box {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-grow: 1;
-        text-align: center;
         flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex-grow: 1;
+        justify-content: center;
+        gap: 12px;
     }
 
-    .login-container h2 {
+    .connect-box h2 {
         color: #004d40;
-        margin-bottom: 20px;
         font-size: 24px;
     }
 
-    .login-container button {
-        background-color: #00c853;
-        color: #fff;
-        padding: 15px 30px;
-        border: none;
-        border-radius: 8px;
+    .connect-box .btn {
         font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        margin-top: 20px;
-        width: 100%;
-        max-width: 300px;
+        padding: 15px 30px;
+        color: #fff;
+        margin-top: 8px;
     }
 
-    .login-container button:hover {
-        background-color: #004d40;
-    }
-
-    .login-container button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .login-container .signup {
-        margin-top: 24px;
-        font-size: 15px;
-    }
-
-    .login-container .signup a {
-        color: #004d40;
-        font-weight: 600;
+    .connect-box .btn:hover:not(:disabled) {
+        color: #00c853;
     }
 
     .login-error {
-        margin-top: 20px;
         max-width: 380px;
         color: #c62828;
         font-size: 15px;
@@ -62,13 +39,16 @@
 {% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <h2>Login with your Bank</h2>
-    <p>Securely connect your bank account using Plaid</p>
-    <button type="button" id="linkButton" onclick="openLink()" {% if not link_token %}disabled{% endif %}>Open Bank Login</button>
-    <p class="login-error" id="loginError">{{ link_error or "" }}</p>
-    <p class="signup">New here? <a href="/createAccount">Create an account</a></p>
-</div>
+<main>
+    <div class="connect-box">
+        <h2>{{ "Connect another bank" if has_connections else "Connect your bank" }}</h2>
+        <p class="muted">Securely link your accounts through Plaid.</p>
+        <button type="button" id="linkButton" class="btn" onclick="openLink()"
+                {% if not link_token %}disabled{% endif %}>Open Bank Login</button>
+        <p class="login-error" id="loginError">{{ link_error or "" }}</p>
+        {% if has_connections %}<p class="muted"><a href="/connections">Back to connections</a></p>{% endif %}
+    </div>
+</main>
 {% endblock %}
 
 {% block scripts %}

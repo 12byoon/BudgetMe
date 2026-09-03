@@ -4,55 +4,49 @@
 
 {% block head %}
 <style>
-    main {
-        width: 100%;
-        max-width: 1000px;
-        margin: 20px auto;
-        padding: 0 20px;
+    .summary-head {
         display: flex;
-        flex-direction: column;
-        gap: 20px;
-        flex-grow: 1;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
     }
 
-    .section {
-        background-color: #fff;
-        padding: 24px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    .sync-box {
+        text-align: right;
     }
 
-    .section h3 {
+    .sync-box .muted {
+        display: block;
+        margin-top: 6px;
+    }
+
+    .stat-row {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+
+    .stat .label {
+        display: block;
+        color: #777;
+        font-size: 13px;
+    }
+
+    .stat .value {
+        font-size: 22px;
+        font-weight: 600;
         color: #004d40;
-        margin-bottom: 4px;
     }
+
+    .stat .value.neg { color: #c62828; }
+    .stat .value.pos { color: #00a344; }
 
     .account-meta {
         color: #777;
         font-size: 14px;
-        margin-bottom: 16px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    th {
-        background-color: #f4f8f4;
-        color: #004d40;
-        font-weight: 600;
-    }
-
-    tr:last-child td {
-        border-bottom: none;
+        margin: 4px 0 16px;
     }
 
     .balances-table {
@@ -60,34 +54,10 @@
         max-width: 360px;
     }
 
-    td.amt, th.amt {
-        text-align: right;
-        white-space: nowrap;
-    }
-
-    .amount.neg {
-        color: #c62828;
-    }
-
-    .amount.pos {
-        color: #00a344;
-    }
-
     .txn-desc .merchant {
         display: block;
         color: #777;
         font-size: 13px;
-    }
-
-    .pending-tag {
-        display: inline-block;
-        margin-left: 6px;
-        padding: 1px 6px;
-        font-size: 12px;
-        color: #8a6d00;
-        background-color: #fff4d6;
-        border-radius: 3px;
-        vertical-align: middle;
     }
 
     .empty-row td {
@@ -100,62 +70,67 @@
         font-size: 13px;
         color: #777;
     }
-
-    .error-card {
-        background-color: #fff;
-        padding: 24px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        border-left: 4px solid #c62828;
-    }
-
-    .error-card h3 {
-        color: #c62828;
-        margin-bottom: 8px;
-    }
-
-    .error-card a.button {
-        display: inline-block;
-        margin-top: 14px;
-        background-color: #00c853;
-        color: #004d40;
-        text-decoration: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        font-weight: bold;
-    }
-
-    .error-card a.button:hover {
-        background-color: #004d40;
-        color: #00c853;
-    }
-
-    .coming-soon {
-        color: #777;
-        font-size: 14px;
-        text-align: center;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
 <main>
-    {% if error %}
-    <div class="error-card">
-        <h3>Couldn't load your accounts</h3>
-        <p>{{ error }}</p>
-        <a class="button" href="/login">Connect a bank</a>
+    {% for c in connections if c.status != 'ok' %}
+    <div class="card warning-card">
+        <h3>{{ c.institution_name or "A bank" }} needs attention</h3>
+        <p>
+            {% if c.status == 'needs_relink' %}
+            This connection needs to be re-linked with your bank.
+            {% else %}
+            Last sync failed{% if c.last_error %}: {{ c.last_error }}{% endif %}.
+            {% endif %}
+        </p>
+        <p style="margin-top:12px"><a class="btn" href="/login">Reconnect</a></p>
+    </div>
+    {% endfor %}
+
+    <div class="card">
+        <div class="summary-head">
+            <div>
+                <h2>Last 30 days</h2>
+            </div>
+            <div class="sync-box">
+                <form method="POST" action="/sync">
+                    <button type="submit" class="btn">Sync now</button>
+                </form>
+                {% set synced = connections | map(attribute='last_synced_at') | select | list | max %}
+                {% if synced %}<span class="muted">Last synced {{ synced | ago }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="stat-row">
+            <div class="stat">
+                <span class="label">Spending</span>
+                <span class="value neg">{{ summary.spending_30d | money }}</span>
+            </div>
+            <div class="stat">
+                <span class="label">Income</span>
+                <span class="value pos">{{ summary.income_30d | money }}</span>
+            </div>
+            <div class="stat">
+                <span class="label">Net</span>
+                <span class="value {{ 'pos' if summary.net_30d >= 0 else 'neg' }}">{{ summary.net_30d | money }}</span>
+            </div>
+            <div class="stat">
+                <span class="label">Transactions</span>
+                <span class="value">{{ summary.txn_count_30d }}</span>
+            </div>
+        </div>
     </div>
 
-    {% elif not accounts %}
-    <div class="section">
-        <h3>No accounts found</h3>
-        <p>This bank connection didn't return any accounts.</p>
+    {% if not accounts %}
+    <div class="card">
+        <h3>No accounts yet</h3>
+        <p>This connection didn't return any accounts. Try <a href="/breakdown">syncing</a>.</p>
     </div>
+    {% endif %}
 
-    {% else %}
     {% for acct in accounts %}
-    <div class="section">
+    <div class="card">
         <h3>{{ acct.institution_name or "Your bank" }} — {{ acct.account.name }}</h3>
         <p class="account-meta">
             {{ (acct.account.subtype or acct.account.type or "") | replace("_", " ") | title }}
@@ -164,14 +139,8 @@
         </p>
 
         <table class="balances-table">
-            <tr>
-                <th>Available</th>
-                <td class="amt">{{ acct.available | money }}</td>
-            </tr>
-            <tr>
-                <th>Current</th>
-                <td class="amt">{{ acct.current | money }}</td>
-            </tr>
+            <tr><th>Available</th><td class="amt">{{ acct.available | money }}</td></tr>
+            <tr><th>Current</th><td class="amt">{{ acct.current | money }}</td></tr>
         </table>
 
         <table>
@@ -195,9 +164,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr class="empty-row">
-                <td colspan="4">No transactions for this account yet.</td>
-            </tr>
+            <tr class="empty-row"><td colspan="4">No transactions for this account yet.</td></tr>
             {% endfor %}
         </table>
         {% if acct.transactions | length > 25 %}
@@ -206,7 +173,6 @@
     </div>
     {% endfor %}
 
-    <p class="coming-soon">Spending insights and charts coming soon.</p>
-    {% endif %}
+    <p class="muted" style="text-align:center"><a href="/analysis">See spending analysis &rarr;</a></p>
 </main>
 {% endblock %}

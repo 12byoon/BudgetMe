@@ -12,29 +12,21 @@
 
 <body>
     <header>
-        <a href="/" class="logo">BudgetMe</a>
+        <a href="/breakdown" class="logo">BudgetMe</a>
 
-        <div class="nav-buttons">
+        <nav class="nav-buttons">
             <a href="/breakdown">My Breakdown</a>
             <a href="/analysis">Analysis</a>
-            <a href="/advice">Financial Advice</a>
-        </div>
-
-        <div class="profile-button" onclick="toggleProfileDropdown()">U</div>
-        <div class="profile-dropdown" id="profileDropdown">
-            <a href="/account">Account</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout">Log out</a>
-        </div>
+            <a href="/connections">Connections</a>
+        </nav>
     </header>
 
     {% block content %}{% endblock %}
 
     <footer>
-        <p>&copy; 2024 BudgetMe. All rights reserved.</p>
+        <p>&copy; 2026 BudgetMe</p>
     </footer>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 

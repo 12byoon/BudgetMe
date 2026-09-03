@@ -2,60 +2,25 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{# NOTE: placeholder page - the /analysis route renders it but there is no analysis logic yet. #}
-
 {% block head %}
 <style>
-    main {
-        flex-grow: 1;
-        width: 100%;
-        max-width: 1000px;
-        margin: 20px auto;
-        padding: 0 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+    .chart-wrap {
+        max-width: 320px;
+        margin: 0 auto 16px;
     }
 
-    .card {
-        background-color: #fff;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        padding: 30px;
+    .bar-cell {
+        min-width: 120px;
     }
 
-    .card h2,
-    .card h3 {
-        color: #004d40;
-        margin-bottom: 10px;
+    .bar {
+        height: 10px;
+        background-color: #00c853;
+        border-radius: 2px;
     }
 
-    .card-subtitle {
-        color: #777;
-        font-size: 14px;
-    }
-
-    .graph-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-
-    .graph-grid .card {
-        flex: 1 1 calc(50% - 20px);
-        min-width: 300px;
-    }
-
-    .graph-placeholder {
-        background-color: #f4f8f4;
-        border: 2px dashed #ccc;
-        height: 220px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #aaa;
-        margin-top: 12px;
-    }
+    .bar.spent { background-color: #c62828; }
+    .bar.received { background-color: #00a344; }
 </style>
 {% endblock %}
 
@@ -63,26 +28,106 @@
 <main>
     <div class="card">
         <h2>Analysis</h2>
-        <p class="card-subtitle">Spending trends and insights. This page is a placeholder - no analysis is computed yet.</p>
+        <p class="card-subtitle">Spending by category and merchant is over the {{ report.range_label }};
+            cash flow is by month.</p>
     </div>
 
-    <div class="graph-grid">
-        <div class="card">
-            <h3>Spending by category</h3>
-            <div class="graph-placeholder">Pie chart</div>
-        </div>
-        <div class="card">
-            <h3>Monthly cash flow</h3>
-            <div class="graph-placeholder">Bar chart</div>
-        </div>
-        <div class="card">
-            <h3>Balance over time</h3>
-            <div class="graph-placeholder">Line chart</div>
-        </div>
-        <div class="card">
-            <h3>Top merchants</h3>
-            <div class="graph-placeholder">Table</div>
-        </div>
+    {% if not report.has_data %}
+    <div class="card">
+        <h3>Nothing to analyse yet</h3>
+        <p>Once transactions have synced, spending trends show up here.
+            Try <a href="/breakdown">syncing</a>.</p>
     </div>
+    {% else %}
+
+    <div class="card">
+        <h3>Spending by category</h3>
+        <p class="card-subtitle">{{ report.range_label | capitalize }}</p>
+        {% if report.by_category %}
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        {% set cat_max = report.by_category[0][1] or 1 %}
+        <table>
+            <tr><th>Category</th><th class="amt">Spent</th><th class="bar-cell"></th></tr>
+            {% for label, amount in report.by_category %}
+            <tr>
+                <td>{{ label }}</td>
+                <td class="amt">{{ amount | money }}</td>
+                <td class="bar-cell"><div class="bar spent" style="width: {{ (amount / cat_max * 100) | round(1) }}%"></div></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="muted">No spending in this window.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Monthly cash flow</h3>
+        <table>
+            <tr>
+                <th>Month</th>
+                <th class="amt">Spent</th>
+                <th class="amt">Received</th>
+                <th class="amt">Net</th>
+            </tr>
+            {% for month, spent, received, net in report.by_month %}
+            <tr>
+                <td>{{ month | monthlabel }}</td>
+                <td class="amt"><span class="amount neg">{{ spent | money }}</span></td>
+                <td class="amt"><span class="amount pos">{{ received | money }}</span></td>
+                <td class="amt"><span class="amount {{ 'pos' if net >= 0 else 'neg' }}">{{ net | money }}</span></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Top merchants</h3>
+        {% if report.top_merchants %}
+        <table>
+            <tr><th>Merchant</th><th class="amt">Spent</th><th class="amt">Transactions</th></tr>
+            {% for name, spent, count in report.top_merchants %}
+            <tr>
+                <td>{{ name }}</td>
+                <td class="amt">{{ spent | money }}</td>
+                <td class="amt">{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="muted">No merchant activity in this window.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 </main>
+{% endblock %}
+
+{% block scripts %}
+{% if report.by_category %}
+<script id="categoryData" type="application/json">{{ report.by_category | tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        if (typeof Chart === "undefined") return;
+        var rows = JSON.parse(document.getElementById("categoryData").textContent);
+        var top = rows.slice(0, 6);
+        var rest = rows.slice(6).reduce(function (s, r) { return s + r[1]; }, 0);
+        var labels = top.map(function (r) { return r[0]; });
+        var values = top.map(function (r) { return r[1]; });
+        if (rest > 0) { labels.push("Other"); values.push(rest); }
+        new Chart(document.getElementById("categoryChart"), {
+            type: "doughnut",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ["#004d40", "#00796b", "#00a344", "#4caf50",
+                                      "#8bc34a", "#c0ca33", "#bdbdbd"]
+                }]
+            },
+            options: { plugins: { legend: { position: "bottom" } } }
+        });
+    })();
+</script>
+{% endif %}
 {% endblock %}
