@@ -110,11 +110,6 @@ def breakdown():
     )
 
 
-@app.route("/advice")
-def advice():
-    return render_template("advice.html", title="Financial Advice - BudgetMe")
-
-
 # --- Placeholder pages -------------------------------------------------------
 # These render styled pages so the nav/dropdown links resolve. None of them
 # have a backend yet; forms and controls are inert scaffolding.

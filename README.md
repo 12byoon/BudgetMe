@@ -86,7 +86,6 @@ tests/test_breakdown.py fixture + error-path checks: python tests/test_breakdown
 | `/login` (GET/POST) | GET creates a Plaid link token; POST exchanges the public token and stores the access token in the session |
 | `/logout` | Clears the session |
 | `/breakdown` | Live: every linked account with balances + recent transactions |
-| `/advice` | Mock "advice chatbot" page |
 | `/analysis` | Placeholder analytics page (no logic) |
 | `/account` | Placeholder profile page (inert) |
 | `/settings` | Placeholder settings page (inert) |
@@ -102,7 +101,6 @@ tests/test_breakdown.py fixture + error-path checks: python tests/test_breakdown
 | `/breakdown` transactions | Working - live per account (`/transactions/sync`), newest first, 25 shown |
 | `/breakdown` error handling | Re-link-required token -> error card + reconnect; Plaid/network error -> error card |
 | `/breakdown` charts / spending insights | Not started (a "coming soon" note in place of the old fake sections) |
-| `/advice` AI chatbot | UI only, returns a canned string, no backend |
 | `/analysis` | Route + styled placeholder page; no analysis computed |
 | `/account`, `/settings` | Route + styled placeholder pages; all controls inert |
 | Account creation (`/createAccount`) | Route + styled form; no database, no auth, submit does nothing |

@@ -175,7 +175,7 @@ def test_login_shows_link_error_without_keys():
 
 def test_all_routes_ok():
     client = make_client()
-    for path in ["/", "/advice", "/login", "/logout", "/account", "/settings", "/analysis", "/createAccount"]:
+    for path in ["/", "/login", "/logout", "/account", "/settings", "/analysis", "/createAccount"]:
         code = client.get(path).status_code
         check(f"{path} -> {code}", code in (200, 302))
 
