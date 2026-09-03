@@ -2,6 +2,9 @@
 /venv
 .env
 
+# Local database (Plaid tokens + your bank data)
+instance/
+
 # Python build artifacts
 __pycache__/
 *.pyc

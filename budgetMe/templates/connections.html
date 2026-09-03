@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+    .conn-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .conn-rows {
+        margin: 12px 0 18px;
+    }
+
+    .conn-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .conn-row:last-child { border-bottom: none; }
+
+    .conn-row .label { color: #777; }
+
+    .conn-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+    <div class="card">
+        <h2>Connected banks</h2>
+        <p class="card-subtitle">Each bank is linked through Plaid. Data lives only in your local
+            <code>instance/budgetme.db</code>.</p>
+        <a class="btn" href="/login">Connect {{ "another" if connections else "a" }} bank</a>
+    </div>
+
+    {% for c in connections %}
+    <div class="card">
+        <div class="conn-head">
+            <h3>{{ c.institution_name or "Bank #" ~ c.id }}</h3>
+            <span class="status-badge {{ 'bad' if c.status != 'ok' else '' }}">
+                {{ {'ok': 'Connected', 'needs_relink': 'Needs re-link', 'error': 'Sync error'}.get(c.status, c.status) }}
+            </span>
+        </div>
+        <div class="conn-rows">
+            <div class="conn-row"><span class="label">Accounts</span><span>{{ c.account_count }}</span></div>
+            <div class="conn-row"><span class="label">Linked</span><span>{{ c.linked_at | ago }}</span></div>
+            <div class="conn-row"><span class="label">Last synced</span>
+                <span>{{ (c.last_synced_at | ago) or "never" }}</span></div>
+            {% if c.last_error %}
+            <div class="conn-row"><span class="label">Last error</span><span>{{ c.last_error }}</span></div>
+            {% endif %}
+        </div>
+        <div class="conn-actions">
+            {% if c.status != 'ok' %}<a class="btn" href="/login">Reconnect</a>{% endif %}
+            <form method="POST" action="/connections/{{ c.id }}/delete"
+                  onsubmit="return confirm('Disconnect {{ c.institution_name or 'this bank' }}? Its stored accounts and transactions will be deleted.');">
+                <button type="submit" class="btn btn-secondary">Disconnect</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="muted">No banks connected yet.</p>
+    </div>
+    {% endfor %}
+</main>
+{% endblock %}
